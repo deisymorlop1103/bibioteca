@@ -326,6 +326,7 @@ export default function App() {
           </p>
         </div>
 
+
         {/* Grid de Libros */}
         {currentBooks.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
@@ -388,7 +389,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Modal Formulario */}
+      {/* Modal Formulario*/}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
