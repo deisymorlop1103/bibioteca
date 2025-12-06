@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/bibioteca/static/js/main.300f191c.js",
+    "index.html": "/bibioteca/index.html",
+    "main.300f191c.js.map": "/bibioteca/static/js/main.300f191c.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.300f191c.js"
+  ]
+}
