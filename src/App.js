@@ -32,10 +32,13 @@ import {
   X, 
   ArrowRight,
   Library,
-  BookOpen
+  BookOpen,
+  AlertTriangle 
 } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE FIREBASE 
+// NOTA: Esta configuración está duplicada aquí y en firebase.js.
+// Para un código más limpio, considera usar solo firebase.js para la inicialización
 const firebaseConfig = {
   apiKey: "AIzaSyDOXDeqj91LMzH05pQEsYUB5w-Fm0r0Y74",
   authDomain: "mibibliotecaapp-c5222.firebaseapp.com",
@@ -92,6 +95,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
+  
+  // ESTADOS PARA LA CONFIRMACIÓN DE ELIMINACIÓN
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -103,14 +110,11 @@ export default function App() {
 
   // 1. Inicialización de Autenticación
   useEffect(() => {
-    // Escuchamos el estado de autenticación
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
     });
     
-    // Intentamos iniciar sesión automáticamente si no hay usuario (Demo)
-    // En tu app real, podrías quitar esto y dejar solo el botón de login
     if (!auth.currentUser) {
         // Opcional: Iniciar sesión anónima automáticamente
         // signInAnonymously(auth).catch(console.error);
@@ -166,6 +170,12 @@ export default function App() {
     }
     setShowModal(true);
   };
+  
+  // NUEVA FUNCIÓN: Abrir modal de confirmación
+  const openDeleteConfirm = (bookId) => {
+    setBookToDelete(bookId);
+    setShowDeleteConfirm(true);
+  };
 
   const handleSaveBook = async (e) => {
     e.preventDefault();
@@ -192,17 +202,30 @@ export default function App() {
       setShowModal(false);
     } catch (error) {
       console.error("Error saving book:", error);
-      alert("Error al guardar. Intenta nuevamente.");
+      // Usar console.error en lugar de alert()
+      console.error("Error al guardar. Intenta nuevamente.");
     }
   };
 
-  const handleDelete = async (bookId) => {
-    if (!confirm("¿Estás seguro de eliminar este libro?")) return;
+  // FUNCIÓN MODIFICADA: Ahora se llama después de la confirmación
+  const handleDelete = async () => {
+    if (!bookToDelete || !user) {
+      setShowDeleteConfirm(false);
+      return;
+    }
+    
     try {
-      const bookRef = doc(db, 'users', user.uid, 'books', bookId);
+      const bookRef = doc(db, 'users', user.uid, 'books', bookToDelete);
       await deleteDoc(bookRef);
+      // Cerrar el modal después de la eliminación exitosa
+      setShowDeleteConfirm(false);
+      setBookToDelete(null);
     } catch (error) {
       console.error("Error deleting:", error);
+      setShowDeleteConfirm(false);
+      setBookToDelete(null);
+      // Usar console.error en lugar de alert()
+      console.error("Error al eliminar. Intenta nuevamente.");
     }
   };
 
@@ -220,6 +243,36 @@ export default function App() {
 
   // Filtrar libros según la vista actual
   const currentBooks = books.filter(book => book.status === view);
+
+  // --- COMPONENTE MODAL DE CONFIRMACIÓN ---
+  const DeleteConfirmationModal = () => (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="p-6 text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmar Eliminación</h3>
+          <p className="text-gray-600 mb-6">
+            ¿Estás seguro de que quieres eliminar este libro de forma permanente?
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button 
+              variant="secondary" 
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={handleDelete}
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // --- RENDERIZADO ---
 
@@ -377,7 +430,8 @@ export default function App() {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button 
-                    onClick={() => handleDelete(book.id)}
+                    // CAMBIO A LA FUNCIÓN PERSONALIZADA
+                    onClick={() => openDeleteConfirm(book.id)}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-white rounded-full transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -467,6 +521,10 @@ export default function App() {
           </div>
         </div>
       )}
+      
+      {/* Renderizar Modal de Confirmación de Eliminación */}
+      {showDeleteConfirm && <DeleteConfirmationModal />}
+      
     </div>
   );
 }
